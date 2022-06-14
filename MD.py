@@ -69,8 +69,8 @@ ITEM: BOX BOUNDS p p p
 ITEM: ATOMS radius type x y v_x v_y
 ''')
             output = np.ones((self.natoms, 1)) * self.r
-            # output = np.hstack((output, np.ones((self.natoms, 1))))
-            output = np.hstack((output, np.vstack((np.ones((self.natoms//2, 1)), np.ones((self.natoms-self.natoms//2, 1)) + 1))))
+            output = np.hstack((output, np.ones((self.natoms, 1))))
+            # output = np.hstack((output, np.vstack((np.ones((self.natoms//2, 1)), np.ones((self.natoms-self.natoms//2, 1)) + 1))))
             output = np.hstack((output, self.pos))
             output = np.hstack((output, self.vel))
             np.savetxt(fp, output.reshape((self.natoms, 6), order='F'))
@@ -82,7 +82,7 @@ ITEM: ATOMS radius type x y v_x v_y
         data[['vx', 'vy']] = self.vel
         data[['fx', 'fy']] = self.force
         data['E_pot'] = self.E_pot
-        data['E_kin'] = 0.5 * self.m * (data['vx']**2 + data['vy']**2)
+        data['E_kin'] = self.E_kin
         if not os.path.exists(self.filename+'.csv'):
             data.to_csv(self.filename+'.csv')
         else:
@@ -108,6 +108,9 @@ ITEM: ATOMS radius type x y v_x v_y
         mean = 0
         vel = np.random.normal(loc=mean, scale=std_dev, size=(self.natoms, 2))
         return vel
+    
+    def compute_E_kin(self):
+        self.E_kin = 0.5 * self.m * (self.vel[:, 0] ** 2 + self.vel[:, 1] ** 2)
 
     def walls(self):
         tlprt_dist = self.box_size * 2
@@ -142,15 +145,20 @@ ITEM: ATOMS radius type x y v_x v_y
                         self.force[i] += E_pot * Rij / (Rij_module**2)
 
     def varlet(self, k):
-        half_vel = self.vel + (self.force * self.dt * 0.5 / self.m)
+        T = self.E_kin.sum() / self.natoms
+        # half_vel = self.vel + (self.force * self.dt * 0.5 / self.m)
+        half_vel = np.sqrt(self.t_end/T) * self.vel + (self.force * self.dt * 0.5 / self.m)
         self.pos += half_vel * self.dt
         self.compute_force(k)
         self.vel = half_vel + (self.force * self.dt * 0.5 / self.m)
+        self.compute_E_kin()
 
     def run(self, steps, k):
         self.pos = self.generate_pos() # Generate positions
         self.walls() # Check walls
         self.vel = self.generate_vel() # Generate velocities according to Maxwell`s Distribution
+        self.compute_E_kin() # Compute Kinetic Energy
+        print(f"T_start_input = {self.t_start} | E_kin_fact = {self.E_kin.sum():0.2f} | T_start_fact = {self.E_kin.sum()/self.natoms:0.2f}")
         self.compute_force(k) # Compute Forces
         self.dump(0)
         self.csv(0)
@@ -168,6 +176,7 @@ ITEM: ATOMS radius type x y v_x v_y
         self.pos = np.array(df.loc[:, ['x', 'y']])
         self.vel = np.array(df.loc[:, ['vx', 'vy']])
         self.force = np.array(df.loc[:, ['fx', 'fy']])
+        self.E_kin = np.array(df.loc[:, 'E_kin'])
         for step in tqdm(range(int(max_step), int(max_step) + steps)):
             self.varlet(k)
             self.walls()
@@ -178,31 +187,34 @@ ITEM: ATOMS radius type x y v_x v_y
 
 if __name__ == '__main__':
 
-    filepath = 'output/lj'
+    for key, element in ELEMENTS.items():
+        for T in [50, 100, 150, 200, 250, 300, 350, 400, 450, 500, 550, 600]:
+            print(f"{key}: T = {T}")
+            filepath = f'output/{key}/{key}_T{T}'
 
-    params = {
-        'element': ELEMENTS['He'],
-        'natoms': 100,
-        't_start': 273,
-        't_end': 300,
-        'dt': 0.001,
-        'filename': filepath
-    }
+            params = {
+                'element': element,
+                'natoms': 100,
+                't_start': T,
+                't_end': T,
+                'dt': 0.001,
+                'filename': filepath
+            }
 
-    dump = filepath+'.dump'
-    csv = filepath+'.csv'
-    k = 2
-    md = MD(**params)
+            dump = filepath+'.dump'
+            csv = filepath+'.csv'
+            k = 2
+            md = MD(**params)
 
-# Start
+        # Start
 
-    # if os.path.exists(dump):
-    #     os.remove(dump)
-    # if os.path.exists(csv):
-    #     os.remove(csv)
-    
-    # md.run(steps = 1000, k = k)
+            # if os.path.exists(dump):
+            #     os.remove(dump)
+            # if os.path.exists(csv):
+            #     os.remove(csv)
+            
+            # md.run(steps = 500, k = k)
 
-# Continue
+        # Continue
 
-    md.run_continue(steps = 10000, k = k, file = csv)
+            md.run_continue(steps = 500, k = k, file = csv)
