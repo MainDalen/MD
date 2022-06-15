@@ -27,7 +27,7 @@ v(t+\frac{\Delta t}{2}) = v(t) + \frac{1}{2}a(t)\Delta t
 $$
 
 $$
-a(t+\Delta t) = -\frac{1}{m}\nabla U(r(t+\Delta t))\\[3mm]
+a(t+\Delta t) = -\frac{1}{m}\nabla U(r(t+\Delta t))
 $$
 
 $$
