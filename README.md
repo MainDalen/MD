@@ -19,9 +19,15 @@ $$
 ## 3. Verlet integration
 
 $$
-r(t+\Delta t)=r(t) + v(t) \cdot \Delta t + \frac{1}{2} a(t) \Delta t^2\\[3mm]
-v(t+\frac{\Delta t}{2}) = v(t) + \frac{1}{2}a(t)\Delta t\\[3mm]
+r(t+\Delta t)=r(t) + v(t) \cdot \Delta t + \frac{1}{2} a(t) \Delta t^2
+$$
+$$
+v(t+\frac{\Delta t}{2}) = v(t) + \frac{1}{2}a(t)\Delta t
+$$
+$$
 a(t+\Delta t) = -\frac{1}{m}\nabla U(r(t+\Delta t))\\[3mm]
+$$
+$$
 v(t+\Delta t) = v(t+\Delta t) + \frac{1}{2}a(t+\Delta t)\Delta t
 $$
 
