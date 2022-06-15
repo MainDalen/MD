@@ -217,4 +217,4 @@ if __name__ == '__main__':
 
         # Continue
 
-            md.run_continue(steps = 500, k = k, file = csv)
+            md.run_continue(steps = 1000, k = k, file = csv)
